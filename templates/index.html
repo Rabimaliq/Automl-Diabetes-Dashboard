@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🩺Diabetes AutoML</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f7fb;
+            color: #172033;
+        }
+
+        .container {
+            width: 94%;
+            max-width: 1400px;
+            margin: 30px auto;
+        }
+
+        header {
+            background: #172554;
+            color: white;
+            padding: 28px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            margin: 0 0 8px;
+            font-size: 30px;
+        }
+
+        header p {
+            margin: 0;
+            opacity: 0.85;
+        }
+
+        .cards, .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .metrics {
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        .card , .metrics{
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+        }
+
+
+        .metric {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .card-title, .metric-label {
+            font-size: 13px;
+            color: #080808;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .card-value, metric-values {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+        }
+
+        .section h2 {
+            margin-top: 0;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 13px 22px;
+            border-radius: 9px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        #progressFill {
+            width: 0%;
+            height: 100%;
+            background: #2563eb;
+            transition: width 0.4s;
+        }
+
+        #progressText {
+            margin-top: 8px;
+            font-weight: bold;
+        }
+
+        .best-model {
+            border-left: 6px solid #2563eb;
+        }
+
+        .best-model-name {
+            font-size: 25px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table.leaderboard {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        .leaderboard th,
+        .leaderboard td {
+            padding: 13px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .leaderboard th {
+            background: #172554;
+            color: white;
+        }
+
+        .leaderboard tr:hover {
+            background: #f8fafc;
+        }
+
+        .winner-row {
+            background: #eff6ff;
+            font-weight: bold;
+        }
+
+
+        @media (max-width: 1024px) {
+            .metrics {
+                grid-template-columns: repeat(3, 1fr);
+        }  
+
+        @media (max-width: 900px) {
+            .cards, .metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+        }
+
+        @media (max-width: 600px) {
+            .cards, .metrics {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+    <header>
+        <h1>🩺Diabetes AutoML</h1>
+        <p>Custom AutoML Engine for Diabetes Detection</p>
+    </header>
+
+    <!-- STATUS CARDS -->
+    <div class="cards">
+        <div class="card">
+            <div class="card-title">Status</div>
+            <div class="card-value" id="status">Idle</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Progress</div>
+            <div class="card-value" id="progressValue">0%</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Experiments</div>
+            <div class="card-value" id="experiments">0 / 0</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Current Model</div>
+            <div class="card-value" id="currentModel" style="font-size:18px;">—</div>
+        </div>
+    </div>
+
+    <!-- AUTOML CONTROL -->
+    <div class="section">
+        <h2>⚙️ AutoML Control</h2>
+        <button id="runButton" onclick="runAutoML()">🚀 Run AutoML</button>
+
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div id="progressFill"></div>
+            </div>
+            <div id="progressText">Ready</div>
+        </div>
+    </div>
+
+    <!-- BEST MODEL -->
+    <div class="section best-model">
+        <h2>🏆 Best Model</h2>
+        <div id="bestModelName" class="best-model-name">No results yet</div>
+
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">F1 Score</div>
+                <div class="metric-value" id="bestF1">—</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">ROC-AUC</div>
+                <div class="metric-value" id="bestAUC">—</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Precision</div>
+                <div class="metric-value" id="bestPrecision">—</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Recall</div>
+                <div class="metric-value" id="bestRecall">—</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Accuracy</div>
+                <div class="metric-value" id="bestAccuracy">—</div>
+            </div>
+        </div> 
+    </div> 
+    
+    <!-- MODEL COMPARISON -->
+    <div class="section">
+        <h2>📊 Model Comparison</h2>
+        <div class="table-wrapper">
+            <table class="leaderboard">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Best F1</th>
+                        <th>Best ROC-AUC</th>
+                        <th>Best Precision</th>
+                        <th>Best Recall</th>
+                    </tr>
+                </thead>
+                <tbody id="modelComparison"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="section">
+        <h2>🏆 AutoML Leaderboard</h2>
+        <div class="table-wrapper">
+            <table class="leaderboard">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Model</th>
+                        <th>F1</th>
+                        <th>ROC-AUC</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>Accuracy</th>
+                        <th>Training Time</th>
+                        <th>Parameters</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+let polling = null;
+
+function percentage(value) {
+    if (value === undefined || value === null || isNaN(value)) {
+        return "—";
+    }
+    return (value * 100).toFixed(2) + "%";
+}
+
+/* -------------------------------------------------
+   FORMAT PARAMETERS HELPER FUNCTION
+------------------------------------------------- */
+function formatParameters(params) {
+    if (!params || typeof params !== 'object' || Object.keys(params).length === 0) {
+        return "—";
+    }
+    return Object.entries(params)
+        .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
+        .join(', ');
+}
+
+function resetRunButton() {
+    const button = document.getElementById("runButton");
+    button.disabled = false;
+    button.innerText = "🚀 Run AutoML";
+}
+
+function updateDashboard(data) {
+    document.getElementById("status").innerText = data.status || "Idle";
+    document.getElementById("progressValue").innerText = (data.progress || 0) + "%";
+    document.getElementById("experiments").innerText = `${data.completed || 0} / ${data.total || 0}`;
+    document.getElementById("currentModel").innerText = data.current_model || "—";
+    document.getElementById("progressFill").style.width = (data.progress || 0) + "%";
+
+    document.getElementById("progressText").innerText =
+        data.status === "completed"
+            ? "AutoML completed successfully."
+            : `${data.progress || 0}% completed`;
+
+    if (!data.results || data.results.length === 0) {
+        return;
+    }
+
+    const best = data.results[0];
+
+    document.getElementById("bestModelName").innerText = best.model || "—";
+    document.getElementById("bestF1").innerText = percentage(best.f1);
+    document.getElementById("bestAUC").innerText = percentage(best.roc_auc);
+    document.getElementById("bestPrecision").innerText = percentage(best.precision);
+    document.getElementById("bestRecall").innerText = percentage(best.recall);
+    document.getElementById("bestAccuracy").innerText = percentage(best.accuracy);
+
+
+    /* LEADERBOARD */
+    const leaderboard = document.getElementById("leaderboard");
+    leaderboard.innerHTML = "";
+
+    data.results.forEach(result => {
+        const row = document.createElement("tr");
+        if (result.rank === 1) {
+            row.classList.add("winner-row");
+        }
+
+        const trainingTime = result.training_time != null ? Number(result.training_time).toFixed(3) + " sec" : "—";
+        const formattedParams = formatParameters(result.parameters);
+
+        row.innerHTML = `
+            <td>${result.rank ?? '—'}</td>
+            <td>${result.model ?? '—'}</td>
+            <td>${percentage(result.f1)}</td>
+            <td>${percentage(result.roc_auc)}</td>
+            <td>${percentage(result.precision)}</td>
+            <td>${percentage(result.recall)}</td>
+            <td>${percentage(result.accuracy)}</td>
+            <td>${trainingTime}</td>
+            <td>${formattedParams}</td>
+        `;
+        leaderboard.appendChild(row);
+    });
+
+    /* MODEL COMPARISON */
+    createModelComparison(data.results);
+}
+
+function createModelComparison(results) {
+    const models = {};
+
+    results.forEach(result => {
+        if (!models[result.model]) {
+            models[result.model] = [];
+        }
+        models[result.model].push(result);
+    });
+
+    const comparison = document.getElementById("modelComparison");
+    comparison.innerHTML = "";
+
+    Object.keys(models).forEach(modelName => {
+        const modelResults = models[modelName];
+
+        const getMetricMax = (key) => {
+            const vals = modelResults.map(r => r[key]).filter(v => typeof v === 'number');
+            return vals.length > 0 ? Math.max(...vals) : null;
+        };
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><strong>${modelName}</strong></td>
+            <td>${percentage(getMetricMax('f1'))}</td>
+            <td>${percentage(getMetricMax('roc_auc'))}</td>
+            <td>${percentage(getMetricMax('precision'))}</td>
+            <td>${percentage(getMetricMax('recall'))}</td>
+        `;
+        comparison.appendChild(row);
+    });
+}
+
+async function getStatus() {
+    try {
+        const response = await fetch("/api/automl/status");
+        const data = await response.json();
+
+        updateDashboard(data);
+
+        if (data.status === "completed") {
+            stopPolling();
+            resetRunButton();
+        }
+
+        if (data.status === "error") {
+            stopPolling();
+            resetRunButton();
+            document.getElementById("progressText").innerText = "Error: " + (data.error || "Execution failed");
+        }
+    } catch (error) {
+        console.error("Status error:", error);
+    }
+}
+
+function startPolling() {
+    stopPolling();
+    polling = setInterval(getStatus, 1000);
+}
+
+function stopPolling() {
+    if (polling) {
+        clearInterval(polling);
+        polling = null;
+    }
+}
+
+async function runAutoML() {
+    const button = document.getElementById("runButton");
+    button.disabled = true;
+    button.innerText = "⏳ AutoML Running...";
+
+    try {
+        const response = await fetch("/api/automl/run", { method: "POST" });
+        const data = await response.json();
+        console.log("AutoML:", data);
+        startPolling();
+    } catch (error) {
+        console.error("Run error:", error);
+        resetRunButton();
+    }
+}
+
+getStatus();
+</script>
+
+</body>
+</html>

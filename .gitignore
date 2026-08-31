@@ -1,0 +1,13 @@
+# Data files
+*.csv
+*.xlsx
+
+# Python environment & cache
+__pycache__/
+*.pyc
+venv/
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
