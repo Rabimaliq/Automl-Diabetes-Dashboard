@@ -3,7 +3,8 @@
 A high-performance, lightweight **Automated Machine Learning (AutoML)** pipeline integrated with a responsive web-based user interface. This application automatically preprocesses clinical datasets, trains multiple algorithm variations, fine-tunes hyperparameters, create leaderboard and streams evaluation results down to a live status cockpit.
 
 Here is Link of Live Website, 
-automl-diabetes-dashboard-production.up.railway.app
+
+(https://automl-diabetes-dashboard-production.up.railway.app/)
 
 
 ---
